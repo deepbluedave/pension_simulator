@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pension Planning Model v31 (Context-Aware AI)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 2rem;
+        }
+
+        .controls {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .outputs {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        h1,
+        .controls h2 {
+            color: #1a2a45;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        
+        .controls h2 {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .controls h2:first-of-type {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+
+        h1>span {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #6c757d;
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group input[type="number"],
+        .input-group input[type="text"],
+        .input-group input[type="password"],
+        .input-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .input-group p.micro-copy {
+            font-size: 0.8rem;
+            font-style: italic;
+            color: #6c757d;
+            margin-top: -8px;
+            margin-bottom: 12px;
+        }
+
+
+        .input-group-inline {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pension-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pension-group .input-wrapper {
+            flex-grow: 1;
+        }
+
+        .pension-group .checkbox-wrapper {
+            margin-left: 1rem;
+            padding-top: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .pension-group .checkbox-wrapper label {
+            margin-bottom: 0;
+            font-size: 0.8rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #6c757d;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a2a45;
+        }
+
+        .stat-sub-value {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .stat-value.success {
+            color: #28a745;
+        }
+
+        .stat-value.warning {
+            color: #ffc107;
+        }
+
+        .stat-value.danger {
+            color: #dc3545;
+        }
+
+        .chart-container {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .ai-explain-btn {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.2rem;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            margin: 0;
+            font-size: 1.2rem;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            color: #333;
+            border: 1px solid #ccc;
+            line-height: 32px;
+            z-index: 10;
+        }
+
+        .ai-explain-btn:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .ai-explanation-box {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .ai-explanation-box textarea {
+            width: 100%;
+            min-height: 60px;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .ai-explanation-box button {
+            width: auto;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+
+
+        .view-toggle {
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+
+        .view-toggle button {
+            background: #e9ecef;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            cursor: pointer;
+            width: auto;
+            font-size: 0.8rem;
+        }
+
+        .view-toggle button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-top: 1rem;
+            position: relative;
+            height: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #28a745;
+            border-radius: 4px;
+            transition: width 0.1s linear;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            color: #333;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .phase-control {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+        }
+
+        .phase-control>div {
+            flex-grow: 1;
+        }
+
+        .phase-control input {
+            width: 110px !important;
+        }
+
+        .phase-control .remove-phase {
+            flex-grow: 0;
+            flex-shrink: 0;
+            width: 30px;
+            height: 38px;
+            padding: 0;
+            background-color: #dc3545;
+            font-size: 1.2rem;
+            line-height: 38px;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        .add-phase-btn {
+            background-color: #17a2b8;
+            width: auto;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+
+        .add-phase-btn:hover {
+            background-color: #138496;
+        }
+
+        .sub-group {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .sub-group-hidden {
+            display: none;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+        }
+
+        #aiAnalysisContainer {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #aiAnalysisResult {
+            border-top: 1px solid #e9ecef;
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+
+        #aiAnalysisResult h1,
+        #aiAnalysisResult h2,
+        #aiAnalysisResult h3 {
+            border-bottom: none;
+            margin-top: 0.8em;
+        }
+
+        #aiAnalysisResult p,
+        #aiAnalysisResult li {
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        #runAiAnalysis {
+            background-color: #6f42c1;
+        }
+
+        #runAiAnalysis:hover {
+            background-color: #5a2f9e;
+        }
+        
+        #runAiDeepDive {
+            background-color: #007bff;
+        }
+
+        #runAiDeepDive:hover {
+            background-color: #0056b3;
+        }
+        
+        #aiDownloadContainer {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed #ccc;
+        }
+        
+        #aiDownloadContainer button {
+            background-color: #28a745;
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+
+        #aiDownloadContainer button:hover {
+            background-color: #218838;
+        }
+
+
+        .io-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .io-buttons button,
+        .io-buttons label {
+            flex-grow: 1;
+            text-align: center;
+            font-size: 0.9rem;
+            padding: 8px;
+            margin-top: 0;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .io-buttons button:hover,
+        .io-buttons label:hover {
+            background-color: #5a6268;
+        }
+
+        #exportPdf {
+            background-color: #17a2b8;
+        }
+
+        #exportPdf:hover {
+            background-color: #138496;
+        }
+        
+        #exportCsv {
+            background-color: #28a745;
+        }
+
+        #exportCsv:hover {
+            background-color: #218838;
+        }
+
+
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" id="captureArea">
+        <div class="controls">
+            <h1 id="mainTitle">Pension Planning</h1>
+            <div class="input-group">
+                <label for="apiKey">Google AI API Key</label>
+                <input type="password" id="apiKey" placeholder="Paste your API key here">
+            </div>
+            <button id="runSimulation">Run Monte Carlo Simulation</button>
+            <div class="io-buttons">
+                <label for="importSettingsFile" class="button">Import Settings</label>
+                <input type="file" id="importSettingsFile" style="display:none;" accept=".json">
+                <button id="exportSettings">Export Settings</button>
+                <button id="exportCsv" disabled>Export Median Data (CSV)</button> 
+            </div>
+            <div id="progressContainer" class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+                <span id="progressText" class="progress-text"></span>
+            </div>
+            
+            <h2>Personal & Profile Goals</h2>
+            <div class="input-group"> <label for="startAge">Current Age</label> <input type="number" id="startAge"> </div>
+            <div class="input-group"> <label for="endAge">Planning Horizon (Age)</label> <input type="number" id="endAge"> </div>
+            <div class="input-group checkbox-group" style="padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
+                <input type="checkbox" id="coupleMode">
+                <label for="coupleMode" style="font-weight:normal;">We are modeling for a couple (doubles tax bands)</label>
+            </div>
+            <div class="input-group"> <label for="riskTolerance">Risk Tolerance</label>
+                <select id="riskTolerance">
+                    <option value="Conservative">Conservative</option>
+                    <option value="Balanced" selected>Balanced</option>
+                    <option value="Aggressive">Aggressive</option>
+                </select>
+            </div>
+            <div class="input-group"> <label for="legacyGoal">Inheritance Goal (£)</label> <input type="number" id="legacyGoal"> </div>
+             <div class="input-group"> <label for="incomeFlexibility">Essential Spending (% of Income Floor)</label> <input type="number" id="incomeFlexibility"> </div>
+            <div class="input-group">
+                <label for="userContext">Additional Context for AI</label>
+                <textarea style="width: 100%" id="userContext" rows="4" placeholder="e.g., I am determined to retire early and will not work longer. My spouse has a secure final salary pension."></textarea>
+            </div>
+            <div class="input-group"> <label for="minIncomePhasesContainer">Minimum Income Floor (in today's money)</label>
+                <div id="minIncomePhasesContainer"></div>
+                <button id="addMinPhaseBtn" class="add-phase-btn">+ Add Floor Phase</button>
+            </div>
+            <div class="input-group"> <label for="maxIncomePhasesContainer">Maximum Income Cap (in today's money)</label>
+                <div id="maxIncomePhasesContainer"></div>
+                <button id="addMaxPhaseBtn" class="add-phase-btn">+ Add Cap Phase</button>
+            </div>
+
+            <h2>Assets & Contributions</h2>
+            <div class="input-group"> <label for="initialPortfolio">Initial Portfolio (£)</label> <input type="number" id="initialPortfolio"> </div>
+            <div class="input-group"> <label for="annualContribution">Annual Contribution (£)</label> <input type="number" id="annualContribution"> </div>
+            <div class="input-group"> <label for="annualAllowance">Annual Allowance (£)</label> <input type="number" id="annualAllowance"> </div>
+            <div class="input-group"> <label>Contribution Window (Years)</label> <div class="input-group-inline"> <input type="number" id="contributionStartYear"> <input type="number" id="contributionEndYear"> </div> </div>
+
+            <h2>Retirement Income Strategy</h2>
+            <div class="input-group">
+                <label for="withdrawalStrategy">Withdrawal Strategy</label>
+                <select id="withdrawalStrategy">
+                    <option value="flexible">Flexible Income (Withdraw % or Floor)</option>
+                    <option value="needs-based">Needs-Based Income (Withdraw Floor Only)</option>
+                </select>
+            </div>
+            <div class="input-group" id="withdrawalRateContainer"> <label for="withdrawalRate">Base Withdrawal Rate (% of Portfolio)</label> <input type="number" id="withdrawalRate"> </div>
+            <div class="input-group"> <label for="maxPortfolioWithdrawal">Max Annual Portfolio Withdrawal (£)</label> <input type="number" id="maxPortfolioWithdrawal"> </div>
+            <div class="input-group"> <label for="taxFreeLumpSum">Tax-Free Lump Sum Available (£)</label> <input type="number" id="taxFreeLumpSum"> </div>
+            
+            <div class="input-group sub-group" id="guardrailsContainer">
+                <p class="micro-copy" style="margin-top:0;">Adjusts withdrawal rates based on market performance to help preserve capital.</p>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enableGuardrails">
+                    <label for="enableGuardrails">Enable dynamic withdrawal "Guardrails"</label>
+                </div>
+                <div id="guardrailsControls" class="sub-group-hidden">
+                    <label style="margin-top:10px;">If return &gt; <input type="number" id="guardrailsUpperThreshold" style="width:50px;"> %, set rate to <input type="number" id="guardrailsUpperRate" style="width:50px;"> %</label>
+                    <label style="margin-top:5px;">If return &lt; <input type="number" id="guardrailsLowerThreshold" style="width:50px;"> %, set rate to <input type="number" id="guardrailsLowerRate" style="width:50px;"> %</label>
+                </div>
+            </div>
+
+            <div class="input-group sub-group">
+                <p class="micro-copy" style="margin-top:0;">A cash reserve to provide income during market downturns, protecting your invested portfolio.</p>
+                <div class="input-group" style="margin-bottom:10px;"> <label for="initialCashBuffer">Initial Cash Buffer (£)</label> <input type="number" id="initialCashBuffer"> </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enableCashBuffer">
+                    <label for="enableCashBuffer">Enable cash buffer maintenance</label>
+                </div>
+                <div id="cashBufferContainer" class="sub-group-hidden">
+                    <label for="cashBufferYears">Target buffer size (in years of spending)</label>
+                    <input type="number" id="cashBufferYears">
+                     <div class="checkbox-group" style="margin-top:10px;">
+                        <input type="checkbox" id="enableBufferReplenishment">
+                        <label for="enableBufferReplenishment" style="font-weight:normal;">Auto-refill buffer if return &gt; <input type="number" id="bufferReplenishmentThreshold" style="width:50px;"> %</label>
+                    </div>
+                    <div style="margin-top:10px;">
+                         <label for="bufferDrawdownThreshold" style="font-weight:normal;">Use buffer if prior year return &lt; <input type="number" id="bufferDrawdownThreshold" style="width:50px;"> %</label>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Other Pensions</h2>
+            <div class="input-group pension-group">
+                 <div class="input-wrapper"> <label for="statePension">State Pension (£/year)</label> <input type="number" id="statePension"> </div>
+                 <div class="checkbox-wrapper"> <input type="checkbox" id="statePensionIndexLinked"><label for="statePensionIndexLinked">Index-linked</label> </div>
+            </div>
+            <div class="input-group"> <label for="statePensionStartYear">State Pension Start Year</label> <input type="number" id="statePensionStartYear"> </div>
+            <div class="input-group pension-group">
+                <div class="input-wrapper"> <label for="occPension">Occupational Pension (£/year)</label> <input type="number" id="occPension"> </div>
+                <div class="checkbox-wrapper"> <input type="checkbox" id="occPensionIndexLinked"> <label for="occPensionIndexLinked">Index-linked</label> </div>
+            </div>
+            <div class="input-group"> <label for="occPensionStartYear">Occupational Pension Start Year</label> <input type="number" id="occPensionStartYear"> </div>
+            
+            <h2>Simulation & Economic Assumptions</h2>
+            <div class="input-group"> <label for="numSimulations">Number of Simulations</label> <input type="number" id="numSimulations"> </div>
+            <div class="input-group"> <label for="growthRate">Avg. Expected Growth Rate (% p.a.)</label> <input type="number" id="growthRate"> </div>
+            <div class="input-group"> <label for="volatility">Volatility (Std. Dev %)</label> <input type="number" id="volatility"> </div>
+            <div class="input-group"> <label for="inflation">Inflation Rate (% p.a.)</label> <input type="number" id="inflation"> </div>
+            <div class="input-group"> <label for="annualFees">Annual Portfolio Fees (% p.a.)</label> <input type="number" id="annualFees"> </div>
+            <div class="input-group">
+                <label for="taxBandsContainer">Taxation</label>
+                <div class="input-group"> <label for="personalAllowance">Tax-Free Personal Allowance (£)</label> <input type="number" id="personalAllowance"> </div>
+                <div id="taxBandsContainer"></div>
+                <button id="addTaxBandBtn" class="add-phase-btn">+ Add Tax Band</button>
+            </div>
+        </div>
+
+        <div class="outputs">
+            <div class="summary-stats" id="summaryStats"></div>
+            
+            <div class="chart-container" id="realIncomeBreakdownChartContainer">
+                <button class="ai-explain-btn" data-chart-id="realIncomeBreakdownChartContainer" disabled>✨</button>
+                <h2>Real Income Breakdown & Real Portfolio Value (Median Outcome)</h2>
+                <canvas id="realIncomeBreakdownChart"></canvas>
+                <div class="ai-explanation-box"></div>
+            </div>
+            <div class="chart-container" id="portfolioChartContainer">
+                <button class="ai-explain-btn" data-chart-id="portfolioChartContainer" disabled>✨</button>
+                <h2>Portfolio Value Projection</h2>
+                <div class="view-toggle">
+                    <button id="toggleNominal" class="active">Nominal</button>
+                    <button id="toggleReal">Real</button>
+                </div>
+                <canvas id="portfolioChart"></canvas>
+                <div class="ai-explanation-box"></div>
+            </div>
+            <div class="chart-container" id="realIncomeChartContainer">
+                <button class="ai-explain-btn" data-chart-id="realIncomeChartContainer" disabled>✨</button>
+                <h2>Real Income Over Time (Today's £)</h2>
+                <canvas id="realIncomeChart"></canvas>
+                <div class="ai-explanation-box"></div>
+            </div>
+            <div class="chart-container" id="medianCashBufferChartContainer">
+                <button class="ai-explain-btn" data-chart-id="medianCashBufferChartContainer" disabled>✨</button>
+                <h2>Cash Buffer Balance (Median Outcome)</h2>
+                <canvas id="medianCashBufferChart"></canvas>
+                <div class="ai-explanation-box"></div>
+            </div>
+            <div class="chart-container" id="cashflowChartContainer">
+                 <button class="ai-explain-btn" data-chart-id="cashflowChartContainer" disabled>✨</button>
+                 <h2>Cashflow Breakdown & Market Growth (Median Outcome)</h2>
+                 <canvas id="cashflowChart"></canvas>
+                 <div class="ai-explanation-box"></div>
+            </div>
+
+            <div id="aiAnalysisContainer">
+                <h2>AI-Powered Analysis</h2>
+                <button id="runAiAnalysis">Analyze Scenario with Gemini (Screenshot)</button>
+                <button id="runAiDeepDive" disabled>AI Deep Dive & Recommendations (Full Context)</button> 
+                <div id="aiAnalysisResult" data-ai-markdown="">Run a simulation and then click a button to generate your analysis.</div>
+                <div id="aiDownloadContainer" style="display: none;"></div> 
+                <button id="exportPdf" disabled>Export Report to PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Centralized Default Settings ---
+        const DEFAULTS = {
+            startAge: 52,
+            endAge: 100,
+            riskTolerance: 'Balanced',
+            legacyGoal: 0,
+            incomeFlexibility: 80,
+            userContext: '',
+            coupleMode: false,
+            numSimulations: 5000,
+            initialPortfolio: 750000,
+            initialCashBuffer: 0, 
+            annualContribution: 20000,
+            annualAllowance: 60000,
+            contributionStartYear: 2025,
+            contributionEndYear: 2031,
+            growthRate: 4.5,
+            withdrawalStrategy: 'flexible', 
+            withdrawalRate: 3.5,
+            maxPortfolioWithdrawal: 90000,
+            taxFreeLumpSum: 150000,
+            enableGuardrails: true,
+            guardrailsUpperThreshold: 15,
+            guardrailsUpperRate: 4,
+            guardrailsLowerThreshold: -10,
+            guardrailsLowerRate: 2.5,
+            enableCashBuffer: true,
+            cashBufferYears: 2,
+            enableBufferReplenishment: true,
+            bufferReplenishmentThreshold: 6.5,
+            bufferDrawdownThreshold: 0,
+            statePension: 22000,
+            statePensionIndexLinked: true,
+            statePensionStartYear: 2041,
+            occPension: 10000,
+            occPensionIndexLinked: true,
+            occPensionStartYear: 2041,
+            inflation: 3,
+            volatility: 12,
+            annualFees: 0.75,
+            personalAllowance: 12570,
+            minIncomePhases: [ { amount: 35000, startYear: 2031 }, { amount: 30000, startYear: 2045 } ],
+            maxIncomePhases: [ { amount: 45000, startYear: 2031 }, { amount: 40000, startYear: 2055 } ],
+            taxBands: [
+                { threshold: 50270, rate: 20 },
+                { threshold: 125140, rate: 40 },
+                { threshold: Infinity, rate: 45 }
+            ]
+        };
+
+        // --- App State ---
+        let portfolioChartInstance, cashflowChartInstance, realIncomeChartInstance, medianCashBufferChartInstance, realIncomeBreakdownChartInstance;
+        let currentPortfolioView = 'nominal';
+        let lastFullResult = null; 
+        let lastInputs = null;
+        const DOMElements = {};
+        const markdownConverter = new showdown.Converter();
+        const { jsPDF } = window.jspdf;
+        let currentAiQuestions = {}; // MODIFIED: State variable for user-modifiable prompts
+
+        // --- Helper Functions ---
+        const formatCurrency = (value, fractionDigits = 0) => `£${Math.round(value).toLocaleString('en-GB', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })}`;
+        const parseInput = (el) => parseFloat(el.value) || 0;
+        const parsePercent = (el) => parseFloat(el.value) / 100.0 || 0;
+        function generateNormalRandom() { let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2.0*Math.log(u))*Math.cos(2.0*Math.PI*v); }
+
+        function calculateGrossWithdrawalFromNet(netRequired, otherTaxableIncome, personalAllowance, taxBands) {
+            if (netRequired <= 0) return 0;
+            let grossRequired = 0;
+            let netAchieved = 0;
+            let remainingAllowance = Math.max(0, personalAllowance - otherTaxableIncome);
+            if (netRequired > 0 && remainingAllowance > 0) {
+                const drawFromAllowance = Math.min(netRequired, remainingAllowance);
+                grossRequired += drawFromAllowance;
+                netAchieved += drawFromAllowance;
+            }
+            if (netAchieved >= netRequired) return grossRequired;
+            let taxableIncomeSoFar = otherTaxableIncome;
+            let netNeededFromTaxableBands = netRequired - netAchieved;
+            for (const band of taxBands) {
+                const bandRate = band.rate / 100.0;
+                const bandStart = (band === taxBands[0]) ? personalAllowance : taxBands.find((b, i, arr) => arr[i+1] === band)?.threshold || personalAllowance;
+                const availableSpaceInBand = band.threshold - Math.max(bandStart, taxableIncomeSoFar);
+                if (availableSpaceInBand <= 0) continue;
+                const netAvailableInBand = availableSpaceInBand * (1 - bandRate);
+                if (netNeededFromTaxableBands > netAvailableInBand) {
+                    grossRequired += availableSpaceInBand;
+                    netNeededFromTaxableBands -= netAvailableInBand;
+                    taxableIncomeSoFar += availableSpaceInBand;
+                } else {
+                    const grossNeededFromThisBand = netNeededFromTaxableBands / (1 - bandRate);
+                    grossRequired += grossNeededFromThisBand;
+                    return grossRequired;
+                }
+            }
+            return grossRequired;
+        }
+        
+        function runSingleSimulation(inputs, timeline) {
+            let openingBalance = inputs.initialPortfolio;
+            let cashBufferBalance = inputs.initialCashBuffer;
+            let currentNominalStatePension = inputs.statePension, currentNominalOccPension = inputs.occPension;
+            let depletionYear = null;
+            let previousYearGrowthRate = 0;
+            
+            const yearlyResults = { portfolioNominal: [], portfolioReal: [], cashflow: [], realIncomes: [], cashBuffer: [], growthRate: [] };
+            
+            const getCurrentPhaseValue = (year, phases, defaultValue) => {
+                let currentValue = defaultValue;
+                for (const phase of phases) { if (year >= phase.startYear) { currentValue = phase.amount; } }
+                return currentValue;
+            };
+
+            for (let i = 0; i < timeline.numYears; i++) {
+                const currentYear = timeline.startYear + i;
+                const yearFraction = (i === 0) ? timeline.firstYearFraction : 1.0;
+
+                if (i > 0) {
+                    if (inputs.statePensionIndexLinked) currentNominalStatePension *= (1 + inputs.inflation);
+                    if (inputs.occPensionIndexLinked) currentNominalOccPension *= (1 + inputs.inflation);
+                }
+
+                let contribution = 0;
+                if (currentYear >= inputs.contributionStartYear && currentYear <= inputs.contributionEndYear) {
+                    const cappedContribution = Math.min(inputs.annualContribution, inputs.annualAllowance);
+                    contribution = cappedContribution * yearFraction;
+                }
+                
+                const Z = generateNormalRandom();
+                const drift = (inputs.avgGrowthRate - Math.pow(inputs.volatility, 2) / 2) * yearFraction;
+                const diffusion = inputs.volatility * Z * Math.sqrt(yearFraction);
+                const growthRateForYear = Math.exp(drift + diffusion) - 1;
+
+                let portfolioAfterGrowth = (openingBalance + contribution) * (1 + growthRateForYear);
+                
+                let portfolioBeforeWithdrawal = portfolioAfterGrowth * (1 - (inputs.annualFees * yearFraction));
+                
+                let netSpendingNeededFromPortfolio = 0, statePensionReceived = 0, occPensionReceived = 0;
+                
+                const firstWithdrawalYear = inputs.minIncomePhases.length > 0 ? inputs.minIncomePhases[0].startYear : 9999;
+                
+                if (currentYear >= firstWithdrawalYear) {
+                    const incomeFloor = getCurrentPhaseValue(currentYear, inputs.minIncomePhases, 0);
+                    statePensionReceived = (currentYear >= inputs.statePensionStartYear ? currentNominalStatePension : 0) * yearFraction;
+                    occPensionReceived = (currentYear >= inputs.occPensionStartYear ? currentNominalOccPension : 0) * yearFraction;
+                    const totalPensionReceived = statePensionReceived + occPensionReceived;
+                    const inflationAdjustedMinIncome = (incomeFloor * Math.pow(1 + inputs.inflation, i)) * yearFraction;
+                    
+                    let currentYearWithdrawalRate = inputs.withdrawalRate;
+                    if(inputs.enableGuardrails && i > 0) {
+                        if(previousYearGrowthRate > inputs.guardrailsUpperThreshold) currentYearWithdrawalRate = inputs.guardrailsUpperRate;
+                        else if(previousYearGrowthRate < inputs.guardrailsLowerThreshold) currentYearWithdrawalRate = inputs.guardrailsLowerRate;
+                    }
+
+                    let targetNetIncome = 0;
+                    if (inputs.withdrawalStrategy === 'flexible') {
+                       const incomeFromPercentRule = (openingBalance * currentYearWithdrawalRate) * yearFraction;
+                       targetNetIncome = Math.max(inflationAdjustedMinIncome, totalPensionReceived + incomeFromPercentRule);
+                    } else {
+                       targetNetIncome = inflationAdjustedMinIncome;
+                    }
+                    
+                    const incomeCap = getCurrentPhaseValue(currentYear, inputs.maxIncomePhases, Infinity);
+                    if (incomeCap < Infinity) {
+                        const inflationAdjustedMaxIncome = (incomeCap * Math.pow(1 + inputs.inflation, i)) * yearFraction;
+                        targetNetIncome = Math.min(targetNetIncome, inflationAdjustedMaxIncome);
+                    }
+
+                    netSpendingNeededFromPortfolio = Math.max(0, targetNetIncome - totalPensionReceived);
+                }
+
+                let drawFromBuffer = 0;
+                let withdrawalForBuffer = 0;
+
+                if (inputs.enableCashBuffer && currentYear >= firstWithdrawalYear) {
+                    if (previousYearGrowthRate < inputs.bufferDrawdownThreshold) {
+                        drawFromBuffer = Math.min(netSpendingNeededFromPortfolio, cashBufferBalance);
+                    }
+
+                    if (inputs.enableBufferReplenishment && previousYearGrowthRate > inputs.bufferReplenishmentThreshold) {
+                        const targetBufferAmount = netSpendingNeededFromPortfolio * inputs.cashBufferYears;
+                        const bufferShortfall = Math.max(0, targetBufferAmount - (cashBufferBalance - drawFromBuffer));
+                        withdrawalForBuffer = bufferShortfall;
+                    }
+                }
+                
+                const netWithdrawalRequiredForSpending = netSpendingNeededFromPortfolio - drawFromBuffer;
+
+                const currentPersonalAllowance = inputs.personalAllowance * Math.pow(1 + inputs.inflation, i);
+                const currentTaxBands = inputs.taxBands.map(b => ({...b, threshold: b.threshold * Math.pow(1 + inputs.inflation, i) }));
+                
+                const grossWithdrawalForSpending = calculateGrossWithdrawalFromNet(
+                    netWithdrawalRequiredForSpending,
+                    statePensionReceived + occPensionReceived,
+                    currentPersonalAllowance,
+                    currentTaxBands
+                );
+                
+                const totalGrossSellOrder = grossWithdrawalForSpending + withdrawalForBuffer;
+                const actualGrossSell = Math.min(totalGrossSellOrder, inputs.maxPortfolioWithdrawal, portfolioBeforeWithdrawal);
+
+                portfolioBeforeWithdrawal -= actualGrossSell;
+                
+                cashBufferBalance -= drawFromBuffer;
+                const soldForSpending = Math.min(grossWithdrawalForSpending, actualGrossSell);
+                const fundedBufferAmount = Math.max(0, actualGrossSell - soldForSpending);
+                cashBufferBalance += fundedBufferAmount;
+
+                let endingBalanceNominal = portfolioBeforeWithdrawal;
+
+                if (endingBalanceNominal <= 0) {
+                    endingBalanceNominal = 0;
+                    if (depletionYear === null && openingBalance > 0) depletionYear = currentYear;
+                }
+                
+                const inflationFactor = Math.pow(1 + inputs.inflation, i + yearFraction);
+                const totalNetIncome = netWithdrawalRequiredForSpending + drawFromBuffer + statePensionReceived + occPensionReceived;
+                const currentRealIncome = totalNetIncome / Math.pow(1 + inputs.inflation, i);
+
+                yearlyResults.portfolioNominal.push(endingBalanceNominal);
+                yearlyResults.portfolioReal.push(endingBalanceNominal / inflationFactor);
+                yearlyResults.cashflow.push({ 
+                    contribution,
+                    statePension: statePensionReceived,
+                    occPension: occPensionReceived, 
+                    portfolioWithdrawalForSpending: soldForSpending,
+                    portfolioWithdrawalForBuffer: fundedBufferAmount,
+                    totalPortfolioWithdrawal: actualGrossSell,
+                    bufferWithdrawal: drawFromBuffer
+                });
+                yearlyResults.realIncomes.push(currentRealIncome);
+                yearlyResults.cashBuffer.push(cashBufferBalance);
+                yearlyResults.growthRate.push(growthRateForYear);
+                
+                previousYearGrowthRate = growthRateForYear;
+                openingBalance = endingBalanceNominal;
+            }
+            return { 
+                finalBalanceNominal: openingBalance, 
+                finalBalanceReal: yearlyResults.portfolioReal[yearlyResults.portfolioReal.length - 1],
+                depletionYear, 
+                yearlyResults
+            };
+        }
+        
+        function getPhasesFromUI(containerId) {
+            const phases = [];
+            document.querySelectorAll(`#${containerId} .phase-control`).forEach(phaseEl => {
+                const amount = parseInput(phaseEl.querySelector('.income-amount'));
+                const startYear = parseInput(phaseEl.querySelector('.income-start-year'));
+                if (startYear > 0) { phases.push({ amount, startYear }); }
+            });
+            phases.sort((a, b) => a.startYear - b.startYear);
+            return phases;
+        };
+
+        function getTaxBandsFromUI(containerId) {
+            const bands = [];
+            document.querySelectorAll(`#${containerId} .phase-control`).forEach(bandEl => {
+                const threshold = parseInput(bandEl.querySelector('.tax-threshold'));
+                const rate = parseInput(bandEl.querySelector('.tax-rate'));
+                if (threshold > 0 && rate >= 0) { bands.push({ threshold, rate }); }
+            });
+            bands.sort((a, b) => a.threshold - b.threshold);
+            
+            if (bands.length === 0) {
+                return [{ threshold: Infinity, rate: 0 }];
+            }
+
+            const highestBand = bands[bands.length - 1];
+            if (highestBand.threshold !== Infinity) {
+                bands.push({ threshold: Infinity, rate: highestBand.rate });
+            }
+            return bands;
+        }
+
+        function gatherAllInputs() {
+             const settings = {};
+             document.querySelectorAll('.controls [id]').forEach(el => {
+                 if (el.tagName === 'INPUT' && el.type === 'file') return;
+                 const key = el.id;
+                 if (el.type === 'checkbox') {
+                     settings[key] = el.checked;
+                 } else if (typeof el.value !== 'undefined') {
+                     settings[key] = el.value;
+                 }
+             });
+             settings.minIncomePhases = getPhasesFromUI('minIncomePhasesContainer');
+             settings.maxIncomePhases = getPhasesFromUI('maxIncomePhasesContainer');
+             settings.taxBands = getTaxBandsFromUI('taxBandsContainer');
+             settings.aiPrompts = currentAiQuestions; // MODIFIED: Add the prompts to the settings object
+             return settings;
+        }
+
+        async function runMonteCarlo() {
+            DOMElements.runSimulation.disabled = true;
+            DOMElements.runSimulation.textContent = 'Running...';
+            DOMElements.progressContainer.style.display = 'block';
+            DOMElements.progressBar.style.width = '0%';
+            DOMElements.exportPdf.disabled = true;
+            DOMElements.exportCsv.disabled = true;
+            DOMElements.runAiDeepDive.disabled = true; 
+            document.querySelectorAll('.ai-explain-btn').forEach(btn => btn.disabled = true);
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, 10));
+                
+                lastInputs = {
+                    startAge: parseInput(DOMElements.startAge),
+                    endAge: parseInput(DOMElements.endAge),
+                    coupleMode: DOMElements.coupleMode.checked,
+                    riskTolerance: DOMElements.riskTolerance.value,
+                    legacyGoal: parseInput(DOMElements.legacyGoal),
+                    incomeFlexibility: parsePercent(DOMElements.incomeFlexibility),
+                    numSimulations: parseInput(DOMElements.numSimulations),
+                    initialPortfolio: parseInput(DOMElements.initialPortfolio),
+                    initialCashBuffer: parseInput(DOMElements.initialCashBuffer),
+                    annualContribution: parseInput(DOMElements.annualContribution),
+                    annualAllowance: parseInput(DOMElements.annualAllowance),
+                    contributionStartYear: parseInput(DOMElements.contributionStartYear),
+                    contributionEndYear: parseInput(DOMElements.contributionEndYear),
+                    avgGrowthRate: parsePercent(DOMElements.growthRate), 
+                    withdrawalStrategy: DOMElements.withdrawalStrategy.value,
+                    withdrawalRate: parsePercent(DOMElements.withdrawalRate),
+                    maxPortfolioWithdrawal: parseInput(DOMElements.maxPortfolioWithdrawal),
+                    taxFreeLumpSum: parseInput(DOMElements.taxFreeLumpSum),
+                    enableGuardrails: DOMElements.enableGuardrails.checked,
+                    guardrailsUpperThreshold: parsePercent(DOMElements.guardrailsUpperThreshold),
+                    guardrailsUpperRate: parsePercent(DOMElements.guardrailsUpperRate),
+                    guardrailsLowerThreshold: parsePercent(DOMElements.guardrailsLowerThreshold),
+                    guardrailsLowerRate: parsePercent(DOMElements.guardrailsLowerRate),
+                    enableCashBuffer: DOMElements.enableCashBuffer.checked,
+                    cashBufferYears: parseInput(DOMElements.cashBufferYears),
+                    enableBufferReplenishment: DOMElements.enableBufferReplenishment.checked,
+                    bufferReplenishmentThreshold: parsePercent(DOMElements.bufferReplenishmentThreshold),
+                    bufferDrawdownThreshold: parsePercent(DOMElements.bufferDrawdownThreshold),
+                    minIncomePhases: getPhasesFromUI('minIncomePhasesContainer'),
+                    maxIncomePhases: getPhasesFromUI('maxIncomePhasesContainer'),
+                    statePension: parseInput(DOMElements.statePension),
+                    statePensionStartYear: parseInput(DOMElements.statePensionStartYear),
+                    statePensionIndexLinked: DOMElements.statePensionIndexLinked.checked,
+                    occPension: parseInput(DOMElements.occPension),
+                    occPensionStartYear: parseInput(DOMElements.occPensionStartYear),
+                    occPensionIndexLinked: DOMElements.occPensionIndexLinked.checked,
+                    inflation: parsePercent(DOMElements.inflation),
+                    volatility: parsePercent(DOMElements.volatility),
+                    annualFees: parsePercent(DOMElements.annualFees),
+                    personalAllowance: parseInput(DOMElements.personalAllowance),
+                    taxBands: getTaxBandsFromUI('taxBandsContainer')
+                };
+
+                if (lastInputs.coupleMode) {
+                    lastInputs.personalAllowance *= 2;
+                    lastInputs.taxBands = lastInputs.taxBands.map(band => ({
+                        ...band,
+                        threshold: band.threshold === Infinity ? Infinity : band.threshold * 2
+                    }));
+                }
+
+                const now = new Date();
+                const numYears = lastInputs.endAge > lastInputs.startAge ? lastInputs.endAge - lastInputs.startAge : 40;
+
+                const timeline = {
+                    startYear: now.getFullYear(),
+                    numYears: numYears,
+                    firstYearFraction: (new Date(now.getFullYear(), 11, 31) - now) / (1000 * 60 * 60 * 24) / 365,
+                    labels: Array.from({length: numYears}, (_, i) => `${now.getFullYear() + i} (Age ${lastInputs.startAge + i})`)
+                };
+                DOMElements.mainTitle.innerHTML = `Pension Planning <span>Simulation starting ${now.toLocaleDateString()}</span>`;
+
+                const allRuns = [];
+                const BATCH_SIZE = 50;
+                for (let i = 0; i < lastInputs.numSimulations; i++) {
+                    allRuns.push(runSingleSimulation(lastInputs, timeline));
+                    if (i % BATCH_SIZE === 0 || i === lastInputs.numSimulations - 1) {
+                        const progressPercent = ((i + 1) / lastInputs.numSimulations) * 100;
+                        DOMElements.progressBar.style.width = `${progressPercent}%`;
+                        DOMElements.progressText.textContent = `Running simulation ${i + 1} of ${lastInputs.numSimulations}...`;
+                        await new Promise(resolve => setTimeout(resolve, 0)); 
+                    }
+                }
+                const finalBalancesNominal = allRuns.map(r => r.finalBalanceNominal).sort((a, b) => a - b);
+                const finalBalancesReal = allRuns.map(r => r.finalBalanceReal).sort((a, b) => a - b);
+                const getPercentile = (arr, p) => arr[Math.floor(p * arr.length)];
+                
+                const firstWithdrawalYear = lastInputs.minIncomePhases.length > 0 ? lastInputs.minIncomePhases[0].startYear : 9999;
+                const retirementYearIndex = Math.max(0, firstWithdrawalYear - timeline.startYear);
+                const portfolioAtRetirementValues = allRuns.map(r => r.yearlyResults.portfolioNominal[retirementYearIndex]).sort((a,b)=>a-b);
+                
+                const failedRuns = allRuns.filter(r => r.depletionYear !== null);
+                const depletionYears = failedRuns.map(r => r.depletionYear).sort((a,b)=>a-b);
+                const medianDepletionYear = depletionYears.length > 0 ? getPercentile(depletionYears, 0.5) : null;
+
+                const medianRunIndex = allRuns.findIndex(r => r.finalBalanceNominal === getPercentile(finalBalancesNominal, 0.5));
+                const medianRun = allRuns[medianRunIndex < 0 ? Math.floor(allRuns.length / 2) : medianRunIndex];
+                
+                const realIncomePaths = processRealIncomePaths(allRuns, timeline);
+                
+                lastFullResult = {
+                    summary: {
+                        successRate: (1 - (failedRuns.length / lastInputs.numSimulations)) * 100,
+                        p10Balance: { nominal: getPercentile(finalBalancesNominal, 0.10), real: getPercentile(finalBalancesReal, 0.10) },
+                        medianBalance: { nominal: getPercentile(finalBalancesNominal, 0.50), real: getPercentile(finalBalancesReal, 0.50) },
+                        p90Balance: { nominal: getPercentile(finalBalancesNominal, 0.90), real: getPercentile(finalBalancesReal, 0.90) }
+                    },
+                    detailed: {
+                        medianPortfolioAtRetirement: getPercentile(portfolioAtRetirementValues, 0.5),
+                        medianDepletionAge: medianDepletionYear ? medianDepletionYear - timeline.startYear + lastInputs.startAge : null,
+                        bufferUsedCount: medianRun.yearlyResults.cashflow.filter(c => c.bufferWithdrawal > 0).length,
+                    },
+                    medianRun: medianRun,
+                    portfolioPaths: processPortfolioPaths(allRuns, timeline),
+                    realIncomePaths: realIncomePaths,
+                    timeline
+                };
+                renderAllOutputs();
+                DOMElements.exportPdf.disabled = false;
+                DOMElements.exportCsv.disabled = false;
+                DOMElements.runAiDeepDive.disabled = false; 
+                document.querySelectorAll('.ai-explain-btn').forEach(btn => btn.disabled = false);
+            } finally {
+                DOMElements.progressContainer.style.display = 'none';
+                DOMElements.runSimulation.disabled = false;
+                DOMElements.runSimulation.textContent = 'Run Monte Carlo Simulation';
+            }
+        }
+
+        function renderAllOutputs() { 
+            if (!lastFullResult) return; 
+            renderSummary(lastFullResult.summary); 
+            renderRealIncomeBreakdownChart(lastFullResult.medianRun, lastFullResult.timeline.labels);
+            renderPortfolioChart(lastFullResult.portfolioPaths, lastFullResult.timeline.labels);
+            renderRealIncomeChart(lastFullResult.realIncomePaths, lastFullResult.timeline.labels);
+            renderMedianCashBufferChart(lastFullResult.medianRun, lastFullResult.timeline.labels);
+            renderCashflowChart(lastFullResult.medianRun.yearlyResults, lastFullResult.timeline.labels);
+            DOMElements.aiAnalysisResult.innerHTML = 'Run a simulation and then click a button to generate your analysis.'; 
+            DOMElements.aiAnalysisResult.dataset.aiMarkdown = '';
+            DOMElements.aiDownloadContainer.style.display = 'none'; 
+            DOMElements.aiDownloadContainer.innerHTML = ''; 
+            document.querySelectorAll('.ai-explanation-box').forEach(box => {
+                box.style.display = 'none';
+                box.innerHTML = '';
+            });
+            document.querySelectorAll('.ai-explain-btn').forEach(btn => btn.innerHTML = '✨');
+        }
+
+        const getSuccessClass = rate => rate >= 90 ? 'success' : rate >= 70 ? 'warning' : 'danger';
+        function renderSummary({ successRate, p10Balance, medianBalance, p90Balance }) { 
+            DOMElements.summaryStats.innerHTML = `
+                <div class="stat">
+                    <div class="stat-label">Plan Success Rate</div>
+                    <div class="stat-value ${getSuccessClass(successRate)}">${successRate.toFixed(1)}%</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Median Final Balance</div>
+                    <div class="stat-value">${formatCurrency(medianBalance.nominal)}</div>
+                    <div class="stat-sub-value">(${formatCurrency(medianBalance.real)} in today's money)</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">"Bad Luck" Final Balance (10%)</div>
+                    <div class="stat-value ${getSuccessClass(p10Balance.real)}">${formatCurrency(p10Balance.nominal)}</div>
+                    <div class="stat-sub-value">(${formatCurrency(p10Balance.real)} in today's money)</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">"Good Luck" Final Balance (90%)</div>
+                    <div class="stat-value success">${formatCurrency(p90Balance.nominal)}</div>
+                    <div class="stat-sub-value">(${formatCurrency(p90Balance.real)} in today's money)</div>
+                </div>
+            `; 
+        }
+        
+        function processPaths(allRuns, timeline, dataKey) {
+            const paths = { p10: [], median: [], p90: [] };
+            const getPercentile = (arr, p) => arr[Math.floor(p * arr.length)];
+            for (let year = 0; year < timeline.numYears; year++) {
+                const valuesForYear = allRuns.map(run => run.yearlyResults[dataKey][year]).sort((a,b) => a-b);
+                paths.p10.push(getPercentile(valuesForYear, 0.10)); paths.median.push(getPercentile(valuesForYear, 0.50)); paths.p90.push(getPercentile(valuesForYear, 0.90));
+            }
+            return paths;
+        }
+
+        function processPortfolioPaths(allRuns, timeline) { return { nominal: processPaths(allRuns, timeline, 'portfolioNominal'), real: processPaths(allRuns, timeline, 'portfolioReal') }; }
+        function processRealIncomePaths(allRuns, timeline) { return processPaths(allRuns, timeline, 'realIncomes'); }
+
+        function renderLineChart(canvasId, chartInstance, percentileData, labels, title) {
+            if(chartInstance) chartInstance.destroy();
+            const datasets = [ { label: '10th Percentile', data: percentileData.p10, borderColor: 'rgba(255, 99, 132, 0.4)', tension: 0.1, pointRadius: 0 }, { label: '90th Percentile', data: percentileData.p90, borderColor: 'rgba(75, 192, 192, 0.4)', backgroundColor: 'rgba(75, 192, 192, 0.1)', fill: '-1', tension: 0.1, pointRadius: 0 }, { label: 'Median', data: percentileData.median, borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 3, tension: 0.1, pointRadius: 0 } ];
+            const ctx = document.getElementById(canvasId).getContext('2d', { willReadFrequently: true });
+            return new Chart(ctx, { type: 'line', data: { labels, datasets }, options: { animation: false, responsive: true, maintainAspectRatio: true, plugins: { title: { display: true, text: title }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } } }, scales: { y: { beginAtZero: true, ticks: { callback: (v) => formatCurrency(v) } } } } });
+        }
+        
+        function renderRealIncomeBreakdownChart(medianRunData, labels) {
+            if (realIncomeBreakdownChartInstance) realIncomeBreakdownChartInstance.destroy();
+
+            const realIncomeData = {
+                statePension: [],
+                occPension: [],
+                portfolio: [],
+                buffer: []
+            };
+
+            for (let i = 0; i < medianRunData.yearlyResults.cashflow.length; i++) {
+                const cashflow = medianRunData.yearlyResults.cashflow[i];
+                const inflationFactor = Math.pow(1 + lastInputs.inflation, i);
+
+                realIncomeData.statePension.push(cashflow.statePension / inflationFactor);
+                realIncomeData.occPension.push(cashflow.occPension / inflationFactor);
+                realIncomeData.portfolio.push(cashflow.portfolioWithdrawalForSpending / inflationFactor);
+                realIncomeData.buffer.push(cashflow.bufferWithdrawal / inflationFactor);
+            }
+
+            const datasets = [
+                { label: 'State Pension (Real)', data: realIncomeData.statePension, backgroundColor: 'rgb(255, 193, 7)' },
+                { label: 'Occupational Pension (Real)', data: realIncomeData.occPension, backgroundColor: 'rgb(253, 126, 20)' },
+                { label: 'Cash Buffer Withdrawal (Real)', data: realIncomeData.buffer, backgroundColor: 'rgb(54, 162, 235)' },
+                { label: 'Portfolio Withdrawal for Spending (Real)', data: realIncomeData.portfolio, backgroundColor: 'rgb(220, 53, 69)' },
+                {
+                    type: 'line',
+                    label: 'Portfolio Value (Real)',
+                    data: medianRunData.yearlyResults.portfolioReal,
+                    borderColor: 'rgba(108, 117, 125, 0.7)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    yAxisID: 'y1',
+                    order: -1
+                }
+            ];
+
+            const ctx = document.getElementById('realIncomeBreakdownChart').getContext('2d', { willReadFrequently: true });
+            realIncomeBreakdownChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    animation: false,
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: { display: true, text: "Real Income Breakdown & Real Portfolio Value (Median Outcome)" },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true, ticks: { callback: (v) => formatCurrency(v) }, title: { display: true, text: "Real Income (Today's £)" } },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { callback: (v) => formatCurrency(v) },
+                            title: { display: true, text: "Real Portfolio Value (Today's £)" }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        function renderMedianCashBufferChart(medianRunData, labels) {
+            if (medianCashBufferChartInstance) medianCashBufferChartInstance.destroy();
+            const bufferBalances = medianRunData.yearlyResults.cashBuffer;
+            
+            const datasets = [{
+                type: 'line',
+                label: 'Buffer Balance',
+                data: bufferBalances,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderWidth: 2,
+                pointRadius: 3,
+                fill: true,
+                stepped: 'before'
+            }];
+
+            const ctx = document.getElementById('medianCashBufferChart').getContext('2d', { willReadFrequently: true });
+            medianCashBufferChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    animation: false,
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: { display: true, text: 'Cash Buffer Balance (Median Outcome)' },
+                        tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } }
+                    },
+                    scales: { y: { beginAtZero: true, ticks: { callback: (v) => formatCurrency(v) } } }
+                }
+            });
+        }
+        
+        function renderPortfolioChart(portfolioPaths, labels) { portfolioChartInstance = renderLineChart('portfolioChart', portfolioChartInstance, portfolioPaths[currentPortfolioView], labels, `Portfolio Value Range (${currentPortfolioView.charAt(0).toUpperCase() + currentPortfolioView.slice(1)})`); }
+        function renderRealIncomeChart(incomePaths, labels) { realIncomeChartInstance = renderLineChart('realIncomeChart', realIncomeChartInstance, incomePaths, labels, "Real Annual Income Range (Today's £)"); }
+        
+        function renderCashflowChart(yearlyResults, labels) {
+             if (cashflowChartInstance) cashflowChartInstance.destroy();
+             const cashflowData = yearlyResults.cashflow;
+             const growthData = yearlyResults.growthRate;
+             const datasets = [ 
+                 { label: 'Contributions', data: cashflowData.map(d => d.contribution), backgroundColor: 'rgb(40, 167, 69)' }, 
+                 { label: 'State Pension', data: cashflowData.map(d => d.statePension), backgroundColor: 'rgb(255, 193, 7)' }, 
+                 { label: 'Occupational Pension', data: cashflowData.map(d => d.occPension), backgroundColor: 'rgb(253, 126, 20)' },
+                 { label: 'Cash Buffer Withdrawal', data: cashflowData.map(d => d.bufferWithdrawal), backgroundColor: 'rgb(54, 162, 235)' },
+                 { label: 'Net Portfolio Withdrawals', data: cashflowData.map(d => d.totalPortfolioWithdrawal), backgroundColor: 'rgb(220, 53, 69)' },
+                 {
+                    type: 'line',
+                    label: 'Market Growth',
+                    data: growthData.map(g => g * 100),
+                    borderColor: 'rgba(108, 117, 125, 0.7)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    yAxisID: 'y1',
+                    order: -1
+                 }
+            ];
+             const ctx = document.getElementById('cashflowChart').getContext('2d', { willReadFrequently: true });
+             cashflowChartInstance = new Chart(ctx, { 
+                type: 'bar', 
+                data: { labels, datasets }, 
+                options: { 
+                    animation: false, 
+                    responsive: true, 
+                    maintainAspectRatio: true, 
+                    plugins: { 
+                        title: { display: true, text: 'Annual Cashflows & Market Growth (Median Outcome)' }, 
+                        tooltip: { 
+                            mode: 'index', 
+                            intersect: false, 
+                            callbacks: { 
+                                label: (c) => {
+                                    if(c.dataset.type === 'line') {
+                                        return `${c.dataset.label}: ${c.parsed.y.toFixed(2)}%`;
+                                    }
+                                    return `${c.dataset.label}: ${formatCurrency(c.parsed.y)}`;
+                                },
+                                footer: (items) => {
+                                    const barItems = items.filter(i => i.dataset.type !== 'line');
+                                    const total = barItems.reduce((sum, item) => sum + item.parsed.y, 0);
+                                    return `Total Income: ${formatCurrency(total)}`;
+                                } 
+                            } 
+                        } 
+                    }, 
+                    scales: { 
+                        x: { stacked: true }, 
+                        y: { stacked: true, beginAtZero: true, ticks: { callback: (v) => formatCurrency(v) }, title: {display: true, text: 'Amount (£)'}},
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false, },
+                            ticks: { callback: (v) => `${v.toFixed(0)}%` },
+                            title: { display: true, text: 'Annual Growth (%)' }
+                        }
+                    } 
+                } 
+            });
+        }
+        
+        function togglePortfolioView(view) { if (currentPortfolioView === view) return; currentPortfolioView = view; DOMElements.toggleNominal.classList.toggle('active', view === 'nominal'); DOMElements.toggleReal.classList.toggle('active', view === 'real'); if (lastFullResult) { renderPortfolioChart(lastFullResult.portfolioPaths, lastFullResult.timeline.labels); } }
+        
+        function addPhase(container, amount, year) {
+            const newPhase = document.createElement('div');
+            newPhase.className = 'phase-control';
+            newPhase.innerHTML = `<div><label>Income (£)</label><input type="number" class="income-amount" value="${amount}"></div><div><label>From year</label><input type="number" class="income-start-year" value="${year}"></div>`;
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-phase';
+            removeBtn.textContent = '-';
+            newPhase.appendChild(removeBtn);
+            removeBtn.addEventListener('click', () => newPhase.remove());
+            container.appendChild(newPhase);
+        }
+
+        function addTaxBand(container, threshold, rate) {
+            const newBand = document.createElement('div');
+            newBand.className = 'phase-control';
+            newBand.innerHTML = `<div><label>Up to threshold (£)</label><input type="number" class="tax-threshold" value="${threshold}"></div><div><label>Rate (%)</label><input type="number" class="tax-rate" value="${rate}"></div>`;
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-phase';
+            removeBtn.textContent = '-';
+            newBand.appendChild(removeBtn);
+            removeBtn.addEventListener('click', () => newBand.remove());
+            container.appendChild(newBand);
+        }
+
+        function applySettings(settings) {
+            for (const key in settings) {
+                if (DOMElements[key] && typeof settings[key] !== 'object') {
+                    if (DOMElements[key].type === 'checkbox') {
+                        DOMElements[key].checked = settings[key];
+                    } else {
+                        DOMElements[key].value = settings[key];
+                    }
+                }
+            }
+            
+            const minIncomeContainer = document.getElementById('minIncomePhasesContainer');
+            const maxIncomeContainer = document.getElementById('maxIncomePhasesContainer');
+            const taxBandsContainer = document.getElementById('taxBandsContainer');
+
+            if (minIncomeContainer) minIncomeContainer.innerHTML = '';
+            if (maxIncomeContainer) maxIncomeContainer.innerHTML = '';
+            if (taxBandsContainer) taxBandsContainer.innerHTML = '';
+
+            if (settings.minIncomePhases && Array.isArray(settings.minIncomePhases) && minIncomeContainer) {
+                settings.minIncomePhases.forEach(phase => addPhase(minIncomeContainer, phase.amount, phase.startYear));
+            }
+            if (settings.maxIncomePhases && Array.isArray(settings.maxIncomePhases) && maxIncomeContainer) {
+                settings.maxIncomePhases.forEach(phase => addPhase(maxIncomeContainer, phase.amount, phase.startYear));
+            }
+            if (settings.taxBands && Array.isArray(settings.taxBands) && taxBandsContainer) {
+                settings.taxBands.filter(b => b.threshold !== null && b.threshold !== Infinity).forEach(band => addTaxBand(taxBandsContainer, band.threshold, band.rate));
+            }
+
+            // MODIFIED: Check for and apply the custom AI prompts
+            if (settings.aiPrompts && typeof settings.aiPrompts === 'object') {
+                Object.assign(currentAiQuestions, settings.aiPrompts);
+            }
+            
+            toggleCashBufferVisibility();
+            toggleGuardrailsVisibility();
+            toggleWithdrawalRateVisibility();
+        }
+
+        async function getAiAnalysisFromGemini() {
+            const apiKey = DOMElements.apiKey.value;
+            if (!apiKey) { return '### Error\n\nPlease enter a valid Google AI API key to use this feature.'; }
+
+            DOMElements.runAiAnalysis.disabled = true;
+            DOMElements.aiAnalysisResult.innerHTML = '<em>Capturing dashboard and contacting Gemini...</em>';
+
+            try {
+                const canvas = await html2canvas(document.getElementById('captureArea'), { scale: 1.5, windowWidth: 1200 });
+                const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                const base64ImageData = imageDataUrl.split(',')[1];
+
+                const userContext = DOMElements.userContext.value.trim();
+                const userContextPromptSection = userContext 
+                    ? `**Crucial User Context (Must Adhere To):**\nThe user has provided the following personal context that you MUST respect and incorporate into your analysis and recommendations. Do not suggest anything that contradicts these points.\n"${userContext}"`
+                    : '';
+
+                const currentYear = new Date().getFullYear();
+                const retirementYear = lastInputs.contributionEndYear + 1;
+                const retirementAge = lastInputs.startAge + (retirementYear - currentYear);
+                const firstPensionYear = Math.min(lastInputs.statePensionStartYear, lastInputs.occPensionStartYear);
+                const firstPensionAge = lastInputs.startAge + (firstPensionYear - currentYear);
+                const bridgingPeriod = firstPensionYear - retirementYear;
+                
+                const keyFacts = `
+**Key Scenario Facts (Calculated for You):**
+- **Timeline:** The user is currently ${lastInputs.startAge} years old in ${currentYear}.
+- **Retirement Goal:** They plan to retire at age ${retirementAge} in the year ${retirementYear}.
+- **Pension Commencement:** The first pension (State or Occupational) begins at age ${firstPensionAge} in the year ${firstPensionYear}.
+- **CRITICAL: The Bridging Period:** The crucial period where the portfolio must provide the primary income is **${bridgingPeriod} years** (from retirement in ${retirementYear} until the first pension in ${firstPensionYear}).
+- **Key Financials:** Starting portfolio is ${formatCurrency(lastInputs.initialPortfolio)}, with ${formatCurrency(lastInputs.annualContribution)} contributed annually until retirement.
+- **Income Strategy:** The initial income floor during the bridging period is ${formatCurrency(lastInputs.minIncomePhases[0].amount)} per year.
+- **Simulation Results:** The plan has a **${lastFullResult.summary.successRate.toFixed(1)}% success rate**, with a 'Bad Luck' (10th percentile) final balance of ${formatCurrency(lastFullResult.summary.p10Balance.real)} in today's money.
+`;
+
+                const prompt = `You are a professional, critical financial advisor. The user has provided a complete screenshot of their retirement planning dashboard, and a pre-calculated summary of the most important facts.
+
+${keyFacts}
+
+${userContextPromptSection}
+
+**Your Assignment:**
+Based on the screenshot and, most importantly, the **Key Scenario Facts provided above**, provide a detailed review of the entire scenario. Your analysis **MUST** use the ages and durations from the 'Key Scenario Facts'. **Do not perform your own date or age calculations.**
+
+Structure your response in two parts:
+
+**Part 1: Critical Review**
+Analyze the full picture. Comment on the relationship between the user's inputs (goals, strategies) and the resulting charts. Discuss the overall success, the range of outcomes (risk), and the cashflow strategy, paying special attention to the **${bridgingPeriod}-year bridging period**. Conclude with a summary of key risks.
+
+**Part 2: Actionable Recommendations**
+Based on your complete analysis, provide a bulleted list of specific, actionable suggestions for adjusting the input settings to better align the plan with their goals.
+`;
+            
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
+
+                const requestBody = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: "image/jpeg", data: base64ImageData } }
+                        ]
+                    }]
+                };
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error.message || 'API request failed. Check console for details.');
+                }
+                
+                const data = await response.json();
+                if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
+                     return "### Analysis Blocked\n\nThe AI model did not return an analysis. This may be due to the safety settings of the model blocking the prompt or the response. Please try adjusting your inputs.";
+                }
+                const text = data.candidates[0].content.parts[0].text;
+                DOMElements.aiAnalysisResult.dataset.aiMarkdown = text;
+                return text;
+            } catch (error) {
+                console.error("Gemini API Call Failed:", error);
+                return `### API Error\n\nCould not get analysis from Gemini. Please check the following:\n- Is your API key correct and enabled for the Generative Language API?\n- Is your browser blocking the request (check for CORS errors in the console)?\n- Details: ${error.message}`;
+            } finally {
+                DOMElements.runAiAnalysis.disabled = false;
+            }
+        }
+        
+        async function exportToPdf() {
+            DOMElements.exportPdf.textContent = 'Generating...';
+            DOMElements.exportPdf.disabled = true;
+
+            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+            const margin = 15;
+            const docWidth = doc.internal.pageSize.getWidth();
+            const docHeight = doc.internal.pageSize.getHeight();
+            const usableWidth = docWidth - 2 * margin;
+            let currentY = margin;
+
+            doc.setFontSize(22).text('Pension Plan Analysis Report', docWidth / 2, currentY, { align: 'center' });
+            currentY += 10;
+            doc.setFontSize(10).text(`Report generated on: ${new Date().toLocaleDateString()}`, docWidth / 2, currentY, { align: 'center' });
+            currentY += 15;
+
+            const addImageToPdf = async (element, title) => {
+                const canvas = await html2canvas(element, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const imgHeight = (canvas.height * usableWidth) / canvas.width;
+
+                if (currentY + imgHeight + 15 > docHeight - margin) {
+                    doc.addPage();
+                    currentY = margin;
+                }
+                
+                doc.setFontSize(16).text(title, margin, currentY);
+                currentY += 10;
+                
+                doc.addImage(imgData, 'PNG', margin, currentY, usableWidth, imgHeight);
+                currentY += imgHeight + 10;
+            };
+
+            await addImageToPdf(DOMElements.summaryStats, 'Summary Results');
+            await addImageToPdf(DOMElements.realIncomeBreakdownChartContainer, 'Real Income Breakdown');
+            await addImageToPdf(DOMElements.portfolioChartContainer, 'Portfolio Projection');
+            await addImageToPdf(DOMElements.realIncomeChartContainer, 'Real Income Projection');
+            await addImageToPdf(DOMElements.medianCashBufferChartContainer, 'Cash Buffer Balance (Median Outcome)');
+            await addImageToPdf(DOMElements.cashflowChartContainer, 'Median Cashflow Breakdown');
+            
+            const analysisMarkdown = DOMElements.aiAnalysisResult.dataset.aiMarkdown;
+            if (analysisMarkdown && analysisMarkdown.trim() !== '') {
+                
+                if (currentY > docHeight - margin - 20) {
+                     doc.addPage();
+                     currentY = margin;
+                }
+                doc.setFontSize(16).text('Gemini AI Analysis', margin, currentY);
+                currentY += 10;
+
+                const analysisContainer = DOMElements.aiAnalysisResult;
+                const childElements = Array.from(analysisContainer.children);
+
+                for (const element of childElements) {
+                    if (!element.textContent.trim()) continue;
+
+                    const canvas = await html2canvas(element, { 
+                        scale: 2, 
+                        width: analysisContainer.clientWidth, 
+                        windowWidth: analysisContainer.clientWidth
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgHeight = (canvas.height * usableWidth) / canvas.width;
+
+                    if (currentY + imgHeight > docHeight - margin) {
+                        doc.addPage();
+                        currentY = margin;
+                    }
+
+                    doc.addImage(imgData, 'PNG', margin, currentY, usableWidth, imgHeight);
+                    currentY += imgHeight + 2;
+                }
+            }
+            
+            doc.save('pension-plan-analysis.pdf');
+            DOMElements.exportPdf.textContent = 'Export Report to PDF';
+            DOMElements.exportPdf.disabled = false;
+        }
+        
+        function generateMedianCsvString() {
+            if (!lastFullResult || !lastInputs) return null;
+
+            const { medianRun, timeline } = lastFullResult;
+            const headers = [
+                'Year', 'Age',
+                'Total_Income_Nominal', 'Total_Income_Real',
+                'State_Pension_Nominal', 'Occ_Pension_Nominal', 'Portfolio_Withdrawal_Nominal', 'Buffer_Withdrawal_Nominal',
+                'State_Pension_Real', 'Occ_Pension_Real', 'Portfolio_Withdrawal_Real', 'Buffer_Withdrawal_Real',
+                'Portfolio_Balance_Nominal', 'Portfolio_Balance_Real', 'Portfolio_Contribution_Nominal',
+                'Market_Growth_Rate_Percent',
+                'Cash_Buffer_Balance_Nominal', 'Cash_Buffer_Balance_Real'
+            ];
+
+            const csvRows = [headers.join(',')];
+
+            for (let i = 0; i < timeline.numYears; i++) {
+                const year = timeline.startYear + i;
+                const age = lastInputs.startAge + i;
+                const cashflow = medianRun.yearlyResults.cashflow[i];
+                
+                const inflationFactorForIncome = Math.pow(1 + lastInputs.inflation, i);
+                
+                const totalIncomeNominal = cashflow.statePension + cashflow.occPension + cashflow.totalPortfolioWithdrawal + cashflow.bufferWithdrawal;
+                
+                const row = [
+                    year, age,
+                    totalIncomeNominal.toFixed(2), (totalIncomeNominal / inflationFactorForIncome).toFixed(2),
+                    cashflow.statePension.toFixed(2), cashflow.occPension.toFixed(2), cashflow.totalPortfolioWithdrawal.toFixed(2), cashflow.bufferWithdrawal.toFixed(2),
+                    (cashflow.statePension / inflationFactorForIncome).toFixed(2), (cashflow.occPension / inflationFactorForIncome).toFixed(2), (cashflow.totalPortfolioWithdrawal / inflationFactorForIncome).toFixed(2), (cashflow.bufferWithdrawal / inflationFactorForIncome).toFixed(2),
+                    medianRun.yearlyResults.portfolioNominal[i].toFixed(2), medianRun.yearlyResults.portfolioReal[i].toFixed(2), cashflow.contribution.toFixed(2),
+                    (medianRun.yearlyResults.growthRate[i] * 100).toFixed(4),
+                    medianRun.yearlyResults.cashBuffer[i].toFixed(2), (medianRun.yearlyResults.cashBuffer[i] / inflationFactorForIncome).toFixed(2)
+                ];
+                csvRows.push(row.join(','));
+            }
+            return csvRows.join('\n');
+        }
+
+        function exportMedianDataToCsv() {
+            const csvContent = generateMedianCsvString();
+            if (!csvContent) {
+                alert("Please run a simulation before exporting data.");
+                return;
+            }
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'pension-median-data.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function getAiDeepDiveAnalysis() {
+            const apiKey = DOMElements.apiKey.value;
+            if (!apiKey) {
+                DOMElements.aiAnalysisResult.innerHTML = markdownConverter.makeHtml('### Error\n\nPlease enter a valid Google AI API key to use this feature.');
+                return;
+            }
+            if (!lastFullResult || !lastInputs) {
+                DOMElements.aiAnalysisResult.innerHTML = 'Please run a simulation first.';
+                return;
+            }
+
+            DOMElements.runAiDeepDive.disabled = true;
+            DOMElements.aiAnalysisResult.innerHTML = '<em>Capturing dashboard, gathering data, and contacting Gemini for deep dive analysis... This may take a moment.</em>';
+            DOMElements.aiDownloadContainer.style.display = 'none';
+            DOMElements.aiDownloadContainer.innerHTML = '';
+
+            try {
+                const canvas = await html2canvas(document.getElementById('captureArea'), { scale: 1.5, windowWidth: 1200 });
+                const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                const base64ImageData = imageDataUrl.split(',')[1];
+                
+                const settingsJsonString = JSON.stringify(gatherAllInputs(), null, 2);
+                const medianCsvString = generateMedianCsvString();
+
+                if (!medianCsvString) {
+                    throw new Error("Could not generate median data CSV for analysis.");
+                }
+
+                const prompt = `
+You are an expert financial data analyst. Your task is to perform a deep dive analysis of a retirement plan based on the user's settings, the resulting median simulation data, and a screenshot of the dashboard.
+
+You have been provided with THREE pieces of data:
+1.  **INPUT_JSON:** The user's complete settings for the simulation. Use this to understand their goals and strategies.
+2.  **MEDIAN_DATA_CSV:** The year-by-year median outcome of the simulation. Use this to analyze the specific financial events and the consequences of the user's settings.
+3.  **DASHBOARD_SCREENSHOT:** A visual summary of the simulation. Use this to understand the OVERALL RISK and RANGE OF OUTCOMES (e.g., the success rate, the 10th/90th percentile bands) which are not visible in the median-only CSV data.
+
+**CRITICAL CONTEXT on the Cash Buffer:** The cash buffer may start with a balance if the user provides an 'Initial Cash Buffer' from separate savings (see INPUT_JSON). It is then maintained using an 'Opportunistic Top-Up' strategy, where it is replenished from the portfolio only during years with good market returns. Your analysis should focus on whether this strategy successfully builds and/or maintains the buffer over time.
+
+**YOUR ASSIGNMENT (THREE PARTS):**
+
+**Part 1: Critical Review**
+Write a detailed, phase-by-phase analysis of the retirement plan, synthesizing insights from ALL THREE data sources.
+- Identify the key financial phases automatically by observing changes in the CSV data.
+- For each phase, describe what is happening financially, citing specific data points and years from the CSV.
+- Use the screenshot to comment on the plan's overall resilience and the level of risk involved (e.g., "While the median outcome in the CSV is stable, the wide percentile bands in the screenshot indicate significant volatility...").
+
+**Part 2: Key Learnings**
+Summarize the most important insights. What are the core strengths and weaknesses of the plan as revealed by the complete picture of goals, median data, and overall risk?
+
+**Part 3: Actionable Recommendations (JSON Output)**
+Based on your complete analysis, generate a **complete, new JSON file** with your recommended settings to improve the plan's resilience.
+- You MUST wrap this JSON content in a markdown code block like this: \`\`\`json ... \`\`\`
+- **CONSTRAINTS:**
+    - You are ONLY allowed to modify these "strategic lever" parameters: \`minIncomePhases\`, \`maxIncomePhases\`, \`withdrawalRate\`, \`cashBufferYears\`, \`initialCashBuffer\`. You may also update the \`userContext\` to reflect your recommended changes.
+    - You MUST NOT change any other parameters, such as \`startAge\`, \`initialPortfolio\`, \`annualContribution\`, pension details, or economic assumptions. These are "facts" about the user's situation.
+- The new JSON should be a complete, valid file that the user can download and re-import into the tool.
+
+--- START OF DATA ---
+
+**INPUT_JSON:**
+\`\`\`json
+${settingsJsonString}
+\`\`\`
+
+**MEDIAN_DATA_CSV:**
+\`\`\`csv
+${medianCsvString}
+\`\`\`
+`;
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
+
+                const requestBody = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: "image/jpeg", data: base64ImageData } }
+                        ]
+                    }]
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error.message || 'API request failed.');
+                }
+
+                const data = await response.json();
+                 if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
+                     DOMElements.aiAnalysisResult.innerHTML = markdownConverter.makeHtml("### Analysis Blocked\n\nThe AI model did not return an analysis. This may be due to the safety settings of the model blocking the prompt or the response. Please try adjusting your inputs.");
+                     return;
+                }
+
+                const fullResponseText = data.candidates[0].content.parts[0].text;
+
+                const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+                const match = fullResponseText.match(jsonRegex);
+                
+                const analysisMarkdown = fullResponseText.replace(jsonRegex, '').trim();
+                DOMElements.aiAnalysisResult.innerHTML = markdownConverter.makeHtml(analysisMarkdown);
+
+                if (match && match[1]) {
+                    const recommendedJsonString = match[1];
+                    try {
+                        JSON.parse(recommendedJsonString); // Validate the JSON
+                        
+                        DOMElements.aiDownloadContainer.style.display = 'block';
+                        const downloadBtn = document.createElement('button');
+                        downloadBtn.textContent = 'Download Recommended Settings (.json)';
+                        downloadBtn.addEventListener('click', () => {
+                             const blob = new Blob([recommendedJsonString], { type: 'application/json' });
+                             const url = URL.createObjectURL(blob);
+                             const a = document.createElement('a');
+                             a.href = url;
+                             a.download = 'pension-plan-ai-recommendations.json';
+                             document.body.appendChild(a);
+                             a.click();
+                             document.body.removeChild(a);
+                             URL.revokeObjectURL(url);
+                        });
+                        DOMElements.aiDownloadContainer.appendChild(downloadBtn);
+
+                    } catch(e) {
+                        console.error("AI returned invalid JSON.", e);
+                        DOMElements.aiDownloadContainer.style.display = 'none';
+                    }
+                }
+
+            } catch (error) {
+                console.error("Gemini Deep Dive Call Failed:", error);
+                DOMElements.aiAnalysisResult.innerHTML = markdownConverter.makeHtml(`### API Error\n\nCould not get deep dive analysis from Gemini. Details: ${error.message}`);
+            } finally {
+                DOMElements.runAiDeepDive.disabled = false;
+            }
+        }
+        
+        const DEFAULT_AI_QUESTIONS = {
+            "realIncomeBreakdownChartContainer": "Explain why the real portfolio value is declining over time. To do this, you must calculate the portfolio's net real growth rate (using the growth, fees, and inflation inputs from the JSON) and compare it to the real withdrawal rate (using data from the CSV).",
+            "portfolioChartContainer": "Analyze the risk shown in this chart. Explain what the 10th and 90th percentile bands mean for the range of outcomes. How does the 'volatility' input in the JSON settings influence the widening of these bands over time?",
+            "realIncomeChartContainer": "Explain the key phases of real income shown in this chart. Why is there a significant step-change in income, and what does the difference between the 10th and 90th percentile lines say about the reliability of this income stream?",
+            "medianCashBufferChartContainer": "Analyze this chart as a timeline of strategic decisions. Look at the CSV data to find specific years where the buffer was used (a sharp drop) and when it was replenished (a sharp rise), and explain why these events happened based on the market returns and the user's settings.",
+            "cashflowChartContainer": "Explain the difference between this nominal cashflow chart and the real income chart. Focus on the 'Net Portfolio Withdrawals' (red) bar and explain that it includes withdrawals for both spending and for funding the cash buffer, making it different from the real income chart."
+        };
+
+        async function explainChartWithAi(chartId, userQuestion) {
+            const apiKey = DOMElements.apiKey.value;
+            if (!apiKey) {
+                alert('Please enter a valid Google AI API key to use this feature.');
+                return;
+            }
+
+            const chartContainer = document.getElementById(chartId);
+            const explanationBox = chartContainer.querySelector('.ai-explanation-box');
+            const getInsightBtn = explanationBox.querySelector('button');
+            const originalBtnText = getInsightBtn.textContent;
+            
+            getInsightBtn.disabled = true;
+            getInsightBtn.textContent = 'Analyzing...';
+            
+            const responseDiv = explanationBox.querySelector('.ai-response-content');
+            responseDiv.innerHTML = '<em>Contacting Gemini for an explanation...</em>';
+
+            try {
+                const canvas = await html2canvas(chartContainer);
+                const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                const base64ImageData = imageDataUrl.split(',')[1];
+                
+                const settingsJsonString = JSON.stringify(gatherAllInputs(), null, 2);
+                const medianCsvString = generateMedianCsvString();
+                const chartTitle = chartContainer.querySelector('h2').textContent;
+                
+                const prompt = `
+You are an expert financial data analyst. You have been provided with a screenshot of a single chart, the full JSON settings that produced the entire simulation, and the full median data CSV from the simulation.
+
+Your task is to provide a concise, expert-level answer to the user's question about this specific chart.
+
+- **CHART TITLE:** "${chartTitle}"
+- **USER'S QUESTION:** "${userQuestion}"
+
+You MUST use the provided JSON settings and CSV data to perform calculations and derive deep insights to answer the user's question. Do not just describe the image.
+
+**CONTEXTUAL DATA:**
+
+**INPUT_JSON:**
+\`\`\`json
+${settingsJsonString}
+\`\`\`
+
+**MEDIAN_DATA_CSV:**
+\`\`\`csv
+${medianCsvString}
+\`\`\`
+
+**ASSIGNMENT:**
+Based on the chart image and all the contextual data, write a clear and insightful answer to the user's question.
+`;
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
+
+                const requestBody = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: "image/jpeg", data: base64ImageData } }
+                        ]
+                    }]
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error.message || 'API request failed.');
+                }
+
+                const data = await response.json();
+                 if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
+                     responseDiv.innerHTML = 'The AI model did not return an analysis. This may be due to safety settings.';
+                     return;
+                }
+                
+                const fullResponseText = data.candidates[0].content.parts[0].text;
+                responseDiv.innerHTML = markdownConverter.makeHtml(fullResponseText);
+
+
+            } catch (error) {
+                 console.error("Gemini Chart Explanation Failed:", error);
+                 responseDiv.innerHTML = `<strong>Error:</strong> Could not get explanation from AI. ${error.message}`;
+            } finally {
+                getInsightBtn.disabled = false;
+                getInsightBtn.textContent = originalBtnText;
+            }
+        }
+
+
+        function toggleCashBufferVisibility() { DOMElements.cashBufferContainer.classList.toggle('sub-group-hidden', !DOMElements.enableCashBuffer.checked); }
+        function toggleGuardrailsVisibility() { DOMElements.guardrailsControls.classList.toggle('sub-group-hidden', !DOMElements.enableGuardrails.checked); }
+        function toggleWithdrawalRateVisibility() { 
+            const isFlexible = DOMElements.withdrawalStrategy.value === 'flexible'; 
+            DOMElements.withdrawalRateContainer.style.display = isFlexible ? 'block' : 'none'; 
+            DOMElements.guardrailsContainer.style.display = isFlexible ? 'block' : 'none'; 
+        }
+
+        function setupUIEventListeners() {
+            const runSimBtn = document.getElementById('runSimulation');
+            const toggleNominalBtn = document.getElementById('toggleNominal');
+            const toggleRealBtn = document.getElementById('toggleReal');
+            const addMinPhaseBtn = document.getElementById('addMinPhaseBtn');
+            const addMaxPhaseBtn = document.getElementById('addMaxPhaseBtn');
+            const addTaxBandBtn = document.getElementById('addTaxBandBtn');
+            const enableCashBufferCheck = document.getElementById('enableCashBuffer');
+            const enableGuardrailsCheck = document.getElementById('enableGuardrails');
+            const withdrawalStrategySelect = document.getElementById('withdrawalStrategy');
+            const exportSettingsBtn = document.getElementById('exportSettings');
+            const importFile = document.getElementById('importSettingsFile');
+            const runAiBtn = document.getElementById('runAiAnalysis');
+            const exportPdfBtn = document.getElementById('exportPdf');
+            const exportCsvBtn = document.getElementById('exportCsv');
+            const runAiDeepDiveBtn = document.getElementById('runAiDeepDive'); 
+
+
+            if (runSimBtn) runSimBtn.addEventListener('click', runMonteCarlo);
+            if (toggleNominalBtn) toggleNominalBtn.addEventListener('click', () => togglePortfolioView('nominal'));
+            if (toggleRealBtn) toggleRealBtn.addEventListener('click', () => togglePortfolioView('real'));
+
+            if (addMinPhaseBtn) {
+                addMinPhaseBtn.addEventListener('click', () => {
+                    const container = document.getElementById('minIncomePhasesContainer');
+                    if (container) addPhase(container, 50000, 2055);
+                });
+            }
+            if (addMaxPhaseBtn) {
+                addMaxPhaseBtn.addEventListener('click', () => {
+                    const container = document.getElementById('maxIncomePhasesContainer');
+                    if (container) addPhase(container, 65000, 2055);
+                });
+            }
+            if (addTaxBandBtn) {
+                addTaxBandBtn.addEventListener('click', () => {
+                    const container = document.getElementById('taxBandsContainer');
+                    if (container) addTaxBand(container, 125140, 40);
+                });
+            }
+
+            if (enableCashBufferCheck) enableCashBufferCheck.addEventListener('change', toggleCashBufferVisibility);
+            if (enableGuardrailsCheck) enableGuardrailsCheck.addEventListener('change', toggleGuardrailsVisibility);
+            if (withdrawalStrategySelect) withdrawalStrategySelect.addEventListener('change', toggleWithdrawalRateVisibility);
+
+            if (exportSettingsBtn) {
+                exportSettingsBtn.addEventListener('click', () => {
+                    const settings = gatherAllInputs();
+                    delete settings.apiKey;
+                    const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'pension-scenario.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            }
+
+            if (importFile) {
+                importFile.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const settings = JSON.parse(e.target.result);
+                            applySettings(settings);
+                            alert('Settings loaded. Re-run the simulation to see the results for this scenario.');
+                        } catch (error) {
+                            alert('Error parsing settings file. Make sure it is a valid scenario JSON file.');
+                            console.error(error);
+                        }
+                    };
+                    reader.readAsText(file);
+                    event.target.value = '';
+                });
+            }
+
+            if (runAiBtn) {
+                runAiBtn.addEventListener('click', async () => {
+                    if (lastFullResult && lastInputs) {
+                        DOMElements.aiDownloadContainer.style.display = 'none'; 
+                        DOMElements.aiDownloadContainer.innerHTML = ''; 
+                        const markdown = await getAiAnalysisFromGemini();
+                        DOMElements.aiAnalysisResult.innerHTML = markdownConverter.makeHtml(markdown);
+                    } else {
+                        DOMElements.aiAnalysisResult.innerHTML = 'Please run a simulation first.';
+                    }
+                });
+            }
+
+            if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPdf);
+            if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportMedianDataToCsv);
+            if (runAiDeepDiveBtn) runAiDeepDiveBtn.addEventListener('click', getAiDeepDiveAnalysis);
+            
+            // MODIFIED: Entire event listener logic for AI explain buttons
+            document.querySelectorAll('.ai-explain-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const chartId = e.target.dataset.chartId;
+                    const box = document.querySelector(`#${chartId} .ai-explanation-box`);
+                    
+                    if (box.style.display === 'block') {
+                        box.style.display = 'none';
+                        box.innerHTML = '';
+                    } else {
+                        const currentQuestion = currentAiQuestions[chartId] || "Explain this chart.";
+                        box.style.display = 'block';
+                        box.innerHTML = `
+                            <label for="${chartId}-question" style="font-weight:600; font-size:0.85rem;">Ask a question about this chart:</label>
+                            <textarea id="${chartId}-question">${currentQuestion}</textarea>
+                            <button>Get Insight</button>
+                            <div class="ai-response-content" style="margin-top:10px; padding-top:10px; border-top: 1px solid #e0e0e0;"></div>
+                        `;
+                        
+                        const questionTextarea = box.querySelector('textarea');
+                        
+                        // Add listener to save changes as user types
+                        questionTextarea.addEventListener('input', (event) => {
+                            currentAiQuestions[chartId] = event.target.value;
+                        });
+
+                        box.querySelector('button').addEventListener('click', () => {
+                            // The 'question' is now the most up-to-date value in the textarea
+                            explainChartWithAi(chartId, questionTextarea.value);
+                        });
+                    }
+                });
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            for (const el of document.querySelectorAll('[id]')) { DOMElements[el.id] = el; }
+            currentAiQuestions = { ...DEFAULT_AI_QUESTIONS }; // MODIFIED: Initialize the live copy of prompts
+            applySettings(DEFAULTS);
+            setupUIEventListeners();
+            runMonteCarlo();
+        });
+    </script>
+</body>
+
+</html>
